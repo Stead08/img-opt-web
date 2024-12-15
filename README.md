@@ -36,3 +36,15 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## wasm build
+
+ emcc -O3 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+    -I libwebp \
+    webp.c \
+    libwebp/src/{dec,dsp,demux,enc,mux,utils}/*.c \
+    libwebp/sharpyuv/*.c
+
+## deploy
+
+npx wrangler pages deploy build

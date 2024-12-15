@@ -1,5 +1,4 @@
-import { defineConfig } from 'vitest/config';
-import { searchForWorkspaceRoot} from "vite";
+import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
@@ -13,5 +12,18 @@ export default defineConfig({
 		fs: {
 			allow: ["wasm"]
 		}
-	}
+	},
+
+	optimizeDeps: {
+		exclude: ['a.out.js']
+	},
+
+	build: {
+		target: 'esnext',
+		rollupOptions: {
+			external: ['/a.out.js']
+		}
+	},
+
+	assetsInclude: ['**/*.wasm']
 });
