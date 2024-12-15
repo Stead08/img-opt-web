@@ -136,8 +136,8 @@
 
 	<div class="controls">
 		<div class="input-group">
-			<label for="file-input">画像を選択:</label>
-			<input type="file" accept="image/*" id="file-input" />
+			<label for="file-input">PNG画像を選択:</label>
+			<input type="file" accept="image/png" id="file-input" />
 		</div>
 
 		<div class="input-group">
