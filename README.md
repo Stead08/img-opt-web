@@ -39,7 +39,8 @@ You can preview the production build with `npm run preview`.
 
 ## wasm build
 
- emcc -O3 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+emcc -O3 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+    -s ALLOW_MEMORY_GROWTH=1 \
     -I libwebp \
     webp.c \
     libwebp/src/{dec,dsp,demux,enc,mux,utils}/*.c \
