@@ -4,14 +4,13 @@ import { sveltekit } from '@sveltejs/kit/vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 
-
 	server: {
 		fs: {
-			allow: ["packages"]
+			allow: ['packages']
 		}
 	},
 	build: {
-		target: 'esnext',
+		target: 'esnext'
 	},
 
 	assetsInclude: ['**/*.wasm']

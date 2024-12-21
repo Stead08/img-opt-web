@@ -9,4 +9,4 @@ export interface WebpEncoderState {
 	convertedSize: string;
 	worker: Worker | null;
 	debounceTimer: number | null;
-} 
+}
