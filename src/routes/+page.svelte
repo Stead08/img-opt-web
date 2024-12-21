@@ -36,6 +36,7 @@
 							const blob = new Blob([result], { type: 'image/webp' });
 							currentBlobURL = URL.createObjectURL(blob);
 							if (outputImage) outputImage.src = currentBlobURL;
+							convertedSize = formatFileSize(blob.size);
 							console.log('WebP画像が正常に生成されました。');
 							isLoading = false;
 							resolve(null);
@@ -96,6 +97,7 @@
 		const file = input.files?.[0];
 		if (file) {
 			currentFile = file;
+			originalSize = formatFileSize(file.size);
 			if (inputImage) inputImage.src = URL.createObjectURL(file);
 			await convertToWebP(file);
 		}
@@ -130,6 +132,19 @@
 			}
 		};
 	});
+
+	// 既存の状態変数に追加
+	let originalSize = $state<string>('');
+	let convertedSize = $state<string>('');
+
+	// ファイルサイズをフォーマットする関数
+	function formatFileSize(bytes: number): string {
+		if (bytes === 0) return '0 B';
+		const k = 1024;
+		const sizes = ['B', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+	}
 </script>
 
 <div class="container">
@@ -182,10 +197,25 @@
 		<div>
 			<h3>入力画像:</h3>
 			<img bind:this={inputImage} alt="入力画像" />
+			{#if originalSize}
+				<p class="file-size">サイズ: {originalSize}</p>
+			{/if}
 		</div>
 		<div>
 			<h3>WebP出力:</h3>
 			<img bind:this={outputImage} alt="WebP出力" />
+			{#if convertedSize}
+				<p class="file-size">
+					サイズ: {convertedSize}
+					{#if originalSize && convertedSize}
+						<span class="compression-rate">
+							(圧縮率: {Math.round(
+								(1 - Number(convertedSize.split(' ')[0]) / Number(originalSize.split(' ')[0])) * 100
+							)}%)
+						</span>
+					{/if}
+				</p>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -258,5 +288,17 @@
 		padding: 4px;
 		border: 1px solid #ccc;
 		border-radius: 4px;
+	}
+
+	.file-size {
+		margin-top: 8px;
+		font-size: 0.9em;
+		color: #666;
+	}
+
+	.compression-rate {
+		margin-left: 8px;
+		color: #4caf50;
+		font-weight: bold;
 	}
 </style>
