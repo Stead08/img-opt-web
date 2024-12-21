@@ -5,18 +5,18 @@ declare namespace RuntimeExports {
      * @param {Array=} argTypes
      * @param {Object=} opts
      */
-    function cwrap(ident: any, returnType?: string, argTypes?: any[], opts?: any): any;
-    const HEAPF32: any;
-    const HEAPF64: any;
-    const HEAP_DATA_VIEW: any;
-    const HEAP8: any;
-    const HEAPU8: any;
-    const HEAP16: any;
-    const HEAPU16: any;
-    const HEAP32: any;
-    const HEAPU32: any;
-    const HEAP64: any;
-    const HEAPU64: any;
+    function cwrap(ident: any, returnType?: string | undefined, argTypes?: any[] | undefined, opts?: any | undefined): any;
+    let HEAPF32: any;
+    let HEAPF64: any;
+    let HEAP_DATA_VIEW: any;
+    let HEAP8: any;
+    let HEAPU8: any;
+    let HEAP16: any;
+    let HEAPU16: any;
+    let HEAP32: any;
+    let HEAPU32: any;
+    let HEAP64: any;
+    let HEAPU64: any;
 }
 interface WasmModule {
   _version(): number;

@@ -1,0 +1,21 @@
+{
+    "name": "@wasm/webp",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "pkg/webp.wasm.mjs",
+    "typings": "pkg/webp.wasm.d.ts",
+    "scripts": {
+        "build": "bash ./build.sh"
+    },
+    "files": [
+        "pkg",
+        "webp.c"
+    ],
+    "exports": {
+        ".": {
+            "types": "./pkg/webp.wasm.d.ts",
+            "import": "./pkg/webp.wasm.mjs"
+        }
+    }
+}
+
