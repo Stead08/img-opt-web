@@ -52,4 +52,6 @@ emcc -O3 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
 
 ## deploy
 
+```bash
 npx wrangler pages deploy build
+```
