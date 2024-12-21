@@ -1,172 +1,186 @@
-<div class="container">
-	<script src="/a.out.js"></script>
-	<script>
-		let api;
-		let inputImage;
-		let outputImage;
-		let currentBlobURL;
-		let quality = 80; // デフォルト値
+<script>
+	import { onMount } from 'svelte';
+	import createModule from '../lib/a.out.js';
 
-		async function loadImage(src) {
-			const imgBlob = await fetch(src).then((resp) => resp.blob());
-			const img = await createImageBitmap(imgBlob);
-			const canvas = document.createElement('canvas');
-			canvas.width = img.width;
-			canvas.height = img.height;
-			const ctx = canvas.getContext('2d');
-			ctx.drawImage(img, 0, 0);
-			return ctx.getImageData(0, 0, img.width, img.height);
-		}
+	let api;
+	let inputImage;
+	let outputImage;
+	let currentBlobURL;
+	let quality = 80; // デフォルト値
 
-		async function convertToWebP(imageFile) {
-			try {
-				if (!api || !Module) {
-					throw new Error('WebAssembly module not initialized');
-				}
+	onMount(async () => {
+		api = await createModule();
+		console.log(api);
+	});
 
-				const image = await loadImage(URL.createObjectURL(imageFile));
+	const downloadWebP = () => {
+		if (!currentBlobURL) return;
+		const a = document.createElement('a');
+		a.href = currentBlobURL;
+		a.download = 'converted.webp';
+		a.click();
+	};
 
-				const p = api.create_buffer(image.width, image.height);
-				if (!p) throw new Error('Failed to allocate buffer');
+	// async function loadImage(src) {
+	// 	async function loadImage(src) {
+	// 		const imgBlob = await fetch(src).then((resp) => resp.blob());
+	// 		const img = await createImageBitmap(imgBlob);
+	// 		const canvas = document.createElement('canvas');
+	// 		canvas.width = img.width;
+	// 		canvas.height = img.height;
+	// 		const ctx = canvas.getContext('2d');
+	// 		ctx.drawImage(img, 0, 0);
+	// 		return ctx.getImageData(0, 0, img.width, img.height);
+	// 	}
 
-				Module.HEAP8.set(image.data, p);
+	// 	async function convertToWebP(imageFile) {
+	// 		try {
+	// 			if (!api || !Module) {
+	// 				throw new Error('WebAssembly module not initialized');
+	// 			}
 
-				// クオリティを0-100の範囲に制限
-				const currentQuality = Math.min(100, Math.max(0, quality));
-				api.encode(p, image.width, image.height, currentQuality);
-				const resultPointer = api.get_result_pointer();
-				const resultSize = api.get_result_size();
+	// 			const image = await loadImage(URL.createObjectURL(imageFile));
 
-				if (!resultPointer || !resultSize) {
-					throw new Error('Encoding failed');
-				}
+	// 			const p = api.create_buffer(image.width, image.height);
+	// 			if (!p) throw new Error('Failed to allocate buffer');
 
-				const resultView = new Uint8Array(Module.HEAP8.buffer, resultPointer, resultSize);
-				const result = new Uint8Array(resultView);
+	// 			Module.HEAP8.set(image.data, p);
 
-				api.free_result(resultPointer);
-				api.destroy_buffer(p);
+	// 			// クオリティを0-100の範囲に制限
+	// 			const currentQuality = Math.min(100, Math.max(0, quality));
+	// 			api.encode(p, image.width, image.height, currentQuality);
+	// 			const resultPointer = api.get_result_pointer();
+	// 			const resultSize = api.get_result_size();
 
-				// 古いBlobURLを解放
-				if (currentBlobURL) {
-					URL.revokeObjectURL(currentBlobURL);
-				}
+	// 			if (!resultPointer || !resultSize) {
+	// 				throw new Error('Encoding failed');
+	// 			}
 
-				const blob = new Blob([result], { type: 'image/webp' });
-				currentBlobURL = URL.createObjectURL(blob);
-				outputImage.src = currentBlobURL;
+	// 			const resultView = new Uint8Array(Module.HEAP8.buffer, resultPointer, resultSize);
+	// 			const result = new Uint8Array(resultView);
 
-				// ダウンロードボタンを有効化
-				const downloadBtn = document.getElementById('download-btn');
-				downloadBtn.disabled = false;
-			} catch (error) {
-				console.error('Failed to convert image:', error);
-				alert('画像の変換に失敗しました。');
-			}
-		}
+	// 			api.free_result(resultPointer);
+	// 			api.destroy_buffer(p);
 
-		function downloadWebP() {
-			if (!currentBlobURL) return;
-			const a = document.createElement('a');
-			a.href = currentBlobURL;
-			a.download = 'converted.webp';
-			a.click();
-		}
+	// 			// 古いBlobURLを解放
+	// 			if (currentBlobURL) {
+	// 				URL.revokeObjectURL(currentBlobURL);
+	// 			}
 
-		// 初期化処理
-		const initModule = () => {
-			api = {
-				version: Module.cwrap('version', 'number', []),
-				create_buffer: Module.cwrap('create_buffer', 'number', ['number', 'number']),
-				destroy_buffer: Module.cwrap('destroy_buffer', '', ['number']),
-				encode: Module.cwrap('encode', '', ['number', 'number', 'number', 'number']),
-				free_result: Module.cwrap('free_result', '', ['number']),
-				get_result_pointer: Module.cwrap('get_result_pointer', 'number', []),
-				get_result_size: Module.cwrap('get_result_size', 'number', [])
-			};
-			console.log('WebAssembly module initialized:', api.version());
-		};
+	// 			const blob = new Blob([result], { type: 'image/webp' });
+	// 			currentBlobURL = URL.createObjectURL(blob);
+	// 			outputImage.src = currentBlobURL;
 
-		// DOMの準備完了後に実行
-		document.addEventListener('DOMContentLoaded', () => {
-			inputImage = document.getElementById('input-image');
-			outputImage = document.getElementById('output-image');
+	// 			// ダウンロードボタンを有効化
+	// 			const downloadBtn = document.getElementById('download-btn');
+	// 			downloadBtn.disabled = false;
+	// 		} catch (error) {
+	// 			console.error('Failed to convert image:', error);
+	// 			alert('画像の変換に失敗しました。');
+	// 		}
+	// 	}
 
-			const fileInput = document.getElementById('file-input');
-			const qualityInput = document.getElementById('quality-input');
-			const qualityValue = document.getElementById('quality-value');
+	// 	function downloadWebP() {
+	// 		if (!currentBlobURL) return;
+	// 		const a = document.createElement('a');
+	// 		a.href = currentBlobURL;
+	// 		a.download = 'converted.webp';
+	// 		a.click();
+	// 	}
 
-			fileInput.addEventListener('change', (event) => {
-				if (event.target.files && event.target.files[0]) {
-					const file = event.target.files[0];
-					inputImage.src = URL.createObjectURL(file);
-					convertToWebP(file);
-				}
-			});
+	// 	// 初期化処理
+	// 	const initModule = () => {
+	// 		api = {
+	// 			version: Module.cwrap('version', 'number', []),
+	// 			create_buffer: Module.cwrap('create_buffer', 'number', ['number', 'number']),
+	// 			destroy_buffer: Module.cwrap('destroy_buffer', '', ['number']),
+	// 			encode: Module.cwrap('encode', '', ['number', 'number', 'number', 'number']),
+	// 			free_result: Module.cwrap('free_result', '', ['number']),
+	// 			get_result_pointer: Module.cwrap('get_result_pointer', 'number', []),
+	// 			get_result_size: Module.cwrap('get_result_size', 'number', [])
+	// 		};
+	// 		console.log('WebAssembly module initialized:', api.version());
+	// 	};
 
-			qualityInput.addEventListener('input', updateQuality);
-			document.getElementById('quality-number').addEventListener('input', updateQuality);
+	// 	// DOMの準備完了後に実行
+	// 	document.addEventListener('DOMContentLoaded', () => {
+	// 		inputImage = document.getElementById('input-image');
+	// 		outputImage = document.getElementById('output-image');
 
-			function updateQuality(event) {
-				quality = Number(event.target.value);
-				// 値を0-100の範囲に制限
-				quality = Math.min(100, Math.max(0, quality));
+	// 		const fileInput = document.getElementById('file-input');
+	// 		const qualityInput = document.getElementById('quality-input');
+	// 		const qualityValue = document.getElementById('quality-value');
 
-				// 両方の入力要素を更新
-				qualityInput.value = quality;
-				document.getElementById('quality-number').value = quality;
-				qualityValue.textContent = quality;
+	// 		fileInput.addEventListener('change', (event) => {
+	// 			if (event.target.files && event.target.files[0]) {
+	// 				const file = event.target.files[0];
+	// 				inputImage.src = URL.createObjectURL(file);
+	// 				convertToWebP(file);
+	// 			}
+	// 		});
 
-				const file = fileInput.files?.[0];
-				if (file) {
-					convertToWebP(file);
-				}
-			}
+	// 		qualityInput.addEventListener('input', updateQuality);
+	// 		document.getElementById('quality-number').addEventListener('input', updateQuality);
 
-			// Moduleの初期化を待つ
-			if (Module.calledRun) {
-				initModule();
-			} else {
-				Module.onRuntimeInitialized = initModule;
-			}
-		});
-	</script>
+	// 		function updateQuality(event) {
+	// 			quality = Number(event.target.value);
+	// 			// 値を0-100の範囲に制限
+	// 			quality = Math.min(100, Math.max(0, quality));
 
-	<h1>WebP Encoder</h1>
+	// 			// 両方の入力要素を更新
+	// 			qualityInput.value = quality;
+	// 			document.getElementById('quality-number').value = quality;
+	// 			qualityValue.textContent = quality;
 
-	<div class="controls">
-		<div class="input-group">
-			<label for="file-input">PNG画像を選択:</label>
-			<input type="file" accept="image/png" id="file-input" />
-		</div>
+	// 			const file = fileInput.files?.[0];
+	// 			if (file) {
+	// 				convertToWebP(file);
+	// 			}
+	// 		}
 
-		<div class="input-group">
-			<label for="quality-input">品質 (<span id="quality-value">80</span>):</label>
-			<div class="quality-controls">
-				<input type="range" id="quality-input" min="0" max="100" value="80" step="1" />
-				<input
-					type="number"
-					id="quality-number"
-					min="0"
-					max="100"
-					value="80"
-					class="quality-number"
-				/>
-			</div>
-		</div>
+	// 		// Moduleの初期化を待つ
+	// 		if (Module.calledRun) {
+	// 			initModule();
+	// 		} else {
+	// 			Module.onRuntimeInitialized = initModule;
+	// 		}
+	// 	});
+</script>
 
-		<button id="download-btn" onclick={downloadWebP} disabled> WebPをダウンロード </button>
+<h1>WebP Encoder</h1>
+
+<div class="controls">
+	<div class="input-group">
+		<label for="file-input">PNG画像を選択:</label>
+		<input type="file" accept="image/png" id="file-input" />
 	</div>
 
-	<div class="image-container">
-		<div>
-			<h3>入力画像:</h3>
-			<img id="input-image" alt="入力画像" />
+	<div class="input-group">
+		<label for="quality-input">品質 (<span id="quality-value">80</span>):</label>
+		<div class="quality-controls">
+			<input type="range" id="quality-input" min="0" max="100" value="80" step="1" />
+			<input
+				type="number"
+				id="quality-number"
+				min="0"
+				max="100"
+				value="80"
+				class="quality-number"
+			/>
 		</div>
-		<div>
-			<h3>WebP出力:</h3>
-			<img id="output-image" alt="WebP出力" />
-		</div>
+	</div>
+
+	<button id="download-btn" onclick={downloadWebP} disabled> WebPをダウンロード </button>
+</div>
+
+<div class="image-container">
+	<div>
+		<h3>入力画像:</h3>
+		<img id="input-image" alt="入力画像" />
+	</div>
+	<div>
+		<h3>WebP出力:</h3>
+		<img id="output-image" alt="WebP出力" />
 	</div>
 </div>
 
