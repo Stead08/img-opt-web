@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build:frontend": "vite build",
-    "build:wasm": "cd wasm && wasm-pack build --target web",
+    "build:wasm": "cd packages/wasm && npm run build",
     "build": "npm run build:wasm && npm run build:frontend",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
