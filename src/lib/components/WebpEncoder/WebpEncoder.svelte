@@ -124,6 +124,11 @@
 		<h1>WebP Encoder</h1>
 		<p>WebP画像をPNGまたはJPEG画像に変換します。</p>
 	</hgroup>
+	<article>
+		<p class="warning">
+			高圧縮のjpeg画像をwebpに変換する場合、場合によってはファイルサイズが大きくなることがあります。
+		</p>
+	</article>
 
 	<div class="controls">
 		<FileInput {handleFileChange} />
@@ -187,5 +192,9 @@
 
 	button:hover:not(:disabled) {
 		background: #45a049;
+	}
+
+	.warning {
+		color: #ff0000;
 	}
 </style>
