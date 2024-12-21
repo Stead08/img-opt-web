@@ -1,6 +1,7 @@
 <script lang="ts">
 	import createModule from '@wasm/webp';
 	import type { MainModule } from '@wasm/webp';
+	import WebpWorker from '$lib/webp.worker.ts?worker';
 
 	let api = $state<MainModule | null>(null);
 	let inputImage = $state<HTMLImageElement | null>(null);
@@ -8,6 +9,18 @@
 	let currentBlobURL = $state<string | null>(null);
 	let quality = $state(80);
 	let isLoading = $state(false);
+
+	// WebWorkerのインスタンス
+	let worker = $state<Worker | null>(null);
+
+	// WebWorkerの初期化
+	$effect(() => {
+		worker = new WebpWorker();
+
+		return () => {
+			worker?.terminate();
+		};
+	});
 
 	// WebAssemblyモジュールの初期化
 	$effect(() => {
@@ -23,32 +36,31 @@
 
 	// 画像変換処理
 	async function convertToWebP(imageFile: File) {
-		if (!api) return;
+		if (!worker) return;
 		isLoading = true;
 
 		try {
 			const image = await loadImage(URL.createObjectURL(imageFile));
-			const p = api._create_buffer(image.width, image.height);
-			if (!p) throw new Error('Failed to allocate buffer');
 
-			api.HEAP8.set(image.data, p);
-			const currentQuality = Math.min(100, Math.max(0, quality));
-			api._encode(p, image.width, image.height, currentQuality);
+			return new Promise((resolve, reject) => {
+				worker!.onmessage = (e) => {
+					if (e.data.success) {
+						const result = e.data.data;
+						if (currentBlobURL) URL.revokeObjectURL(currentBlobURL);
+						const blob = new Blob([result], { type: 'image/webp' });
+						currentBlobURL = URL.createObjectURL(blob);
+						if (outputImage) outputImage.src = currentBlobURL;
+						resolve(null);
+					} else {
+						reject(new Error(e.data.error));
+					}
+				};
 
-			const resultPointer = api._get_result_pointer();
-			const resultSize = api._get_result_size();
-			if (!resultPointer || !resultSize) throw new Error('Encoding failed');
-
-			const resultView = new Uint8Array(api.HEAP8.buffer, resultPointer, resultSize);
-			const result = new Uint8Array(resultView);
-
-			api._free_result(resultPointer);
-			api._destroy_buffer(p);
-
-			if (currentBlobURL) URL.revokeObjectURL(currentBlobURL);
-			const blob = new Blob([result], { type: 'image/webp' });
-			currentBlobURL = URL.createObjectURL(blob);
-			if (outputImage) outputImage.src = currentBlobURL;
+				worker!.postMessage({
+					imageData: image,
+					quality
+				});
+			});
 		} catch (error) {
 			console.error('Failed to convert image:', error);
 			alert('画像の変換に失敗しました。');
@@ -87,15 +99,17 @@
 </script>
 
 <div class="container">
-	<h1>WebP Encoder</h1>
-
+	<hgroup>
+		<h1>WebP Encoder</h1>
+		<p>WebP画像をPNGまたはJPEG画像に変換します。</p>
+	</hgroup>
 	<div class="controls">
 		<div class="input-group">
-			<label for="file-input">PNG画像を選択:</label>
+			<label for="file-input">PNGまたはJPEG画像を選択:</label>
 			<input
 				type="file"
 				id="file-input"
-				accept="image/png"
+				accept="image/png, image/jpeg, image/jpg"
 				onchange={(e) => {
 					const file = e.currentTarget.files?.[0];
 					if (file) {
