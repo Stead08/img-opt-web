@@ -107,10 +107,17 @@
 		</div>
 
 		<div class="input-group">
-			<label>品質 ({quality}):</label>
+			<label for="quality-input">品質 ({quality}):</label>
 			<div class="quality-controls">
-				<input type="range" min="0" max="100" bind:value={quality} />
-				<input type="number" min="0" max="100" bind:value={quality} class="quality-number" />
+				<input type="range" id="quality-input" min="0" max="100" bind:value={quality} />
+				<input
+					type="number"
+					id="quality-number"
+					min="0"
+					max="100"
+					bind:value={quality}
+					class="quality-number"
+				/>
 			</div>
 		</div>
 
