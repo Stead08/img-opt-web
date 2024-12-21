@@ -1,9 +1,6 @@
 <script lang="ts">
-	import createModule from '@wasm/webp';
-	import type { MainModule } from '@wasm/webp';
 	import WebpWorker from '$lib/webp.worker.ts?worker';
 
-	let api = $state<MainModule | null>(null);
 	let inputImage = $state<HTMLImageElement | null>(null);
 	let outputImage = $state<HTMLImageElement | null>(null);
 	let currentBlobURL = $state<string | null>(null);
@@ -22,18 +19,6 @@
 		};
 	});
 
-	// WebAssemblyモジュールの初期化
-	$effect(() => {
-		(async () => {
-			try {
-				api = await createModule();
-				console.log('WebAssembly module initialized:', api._version());
-			} catch (error) {
-				console.error('Failed to initialize WebAssembly module:', error);
-			}
-		})();
-	});
-
 	// 画像変換処理
 	async function convertToWebP(imageFile: File) {
 		if (!worker) return;
@@ -44,16 +29,27 @@
 
 			return new Promise((resolve, reject) => {
 				worker!.onmessage = (e) => {
-					if (e.data.success) {
-						const result = e.data.data;
-						if (currentBlobURL) URL.revokeObjectURL(currentBlobURL);
-						const blob = new Blob([result], { type: 'image/webp' });
-						currentBlobURL = URL.createObjectURL(blob);
-						if (outputImage) outputImage.src = currentBlobURL;
-						resolve(null);
-					} else {
-						reject(new Error(e.data.error));
+					try {
+						if (e.data.success) {
+							const result = e.data.data;
+							if (currentBlobURL) URL.revokeObjectURL(currentBlobURL);
+							const blob = new Blob([result], { type: 'image/webp' });
+							currentBlobURL = URL.createObjectURL(blob);
+							if (outputImage) outputImage.src = currentBlobURL;
+							console.log('WebP画像が正常に生成されました。');
+							isLoading = false;
+							resolve(null);
+						} else {
+							reject(new Error(e.data.error));
+						}
+					} finally {
+						isLoading = false;
 					}
+				};
+
+				worker!.onerror = (error) => {
+					isLoading = false;
+					reject(error);
 				};
 
 				worker!.postMessage({
@@ -64,8 +60,8 @@
 		} catch (error) {
 			console.error('Failed to convert image:', error);
 			alert('画像の変換に失敗しました。');
-		} finally {
 			isLoading = false;
+			throw error;
 		}
 	}
 
@@ -91,10 +87,48 @@
 		a.click();
 	}
 
-	// 品質値が変更された時の処理
+	// 現在の入力ファイルを保持する変数を追加
+	let currentFile = $state<File | null>(null);
+
+	// ファイル選択時の処理を関数として定義
+	async function handleFileChange(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) {
+			currentFile = file;
+			if (inputImage) inputImage.src = URL.createObjectURL(file);
+			await convertToWebP(file);
+		}
+	}
+
+	// デバウンス用のタイマーID
+	let debounceTimer: number | null = null;
+
+	// 品質値が変更された時の処理をデバウンス付きのイベントハンドラとして実装
+	async function handleQualityChange(newQuality: number) {
+		quality = newQuality; // UIの更新はすぐに行う
+
+		// 既存のタイマーをクリア
+		if (debounceTimer !== null) {
+			clearTimeout(debounceTimer);
+		}
+
+		// 新しいタイマーをセット
+		debounceTimer = window.setTimeout(async () => {
+			if (currentFile && !isLoading) {
+				await convertToWebP(currentFile);
+			}
+			debounceTimer = null;
+		}, 200); // 200ミリ秒のデバウンス
+	}
+
+	// コンポーネントのクリーンアップ
 	$effect(() => {
-		const file = document.querySelector<HTMLInputElement>('#file-input')?.files?.[0];
-		if (file) convertToWebP(file);
+		return () => {
+			if (debounceTimer !== null) {
+				clearTimeout(debounceTimer);
+			}
+		};
 	});
 </script>
 
@@ -110,27 +144,31 @@
 				type="file"
 				id="file-input"
 				accept="image/png, image/jpeg, image/jpg"
-				onchange={(e) => {
-					const file = e.currentTarget.files?.[0];
-					if (file) {
-						if (inputImage) inputImage.src = URL.createObjectURL(file);
-						convertToWebP(file);
-					}
-				}}
+				onchange={handleFileChange}
 			/>
 		</div>
 
 		<div class="input-group">
 			<label for="quality-input">品質 ({quality}):</label>
 			<div class="quality-controls">
-				<input type="range" id="quality-input" min="0" max="100" bind:value={quality} />
+				<input
+					type="range"
+					id="quality-input"
+					min="0"
+					max="100"
+					value={quality}
+					oninput={(e) => handleQualityChange(parseInt(e.currentTarget.value))}
+					disabled={!currentFile || isLoading}
+				/>
 				<input
 					type="number"
 					id="quality-number"
 					min="0"
 					max="100"
-					bind:value={quality}
+					value={quality}
+					oninput={(e) => handleQualityChange(parseInt(e.currentTarget.value))}
 					class="quality-number"
+					disabled={!currentFile || isLoading}
 				/>
 			</div>
 		</div>
