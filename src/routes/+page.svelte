@@ -83,7 +83,7 @@
 		if (!currentBlobURL) return;
 		const a = document.createElement('a');
 		a.href = currentBlobURL;
-		a.download = 'converted.webp';
+		a.download = currentFile?.name.replace(/\.[^.]+$/, '') + '.webp';
 		a.click();
 	}
 
