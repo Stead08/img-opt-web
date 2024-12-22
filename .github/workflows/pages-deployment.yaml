@@ -8,11 +8,18 @@ jobs:
     name: Deploy to Cloudflare Pages
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: install bun
-        uses: oven-sh/setup-bun@v2
-      - name: bun install
-        run: bun install
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
         with:
@@ -21,9 +28,9 @@ jobs:
       - name: Verify
         run: emcc -v
       - name: build wasm
-        run: bun run build:wasm
+        run: pnpm run build:wasm
       - name: build frontend
-        run: bun run build:frontend
+        run: pnpm run build:frontend
       - name: Publish
         uses: cloudflare/pages-action@v1
         with:
