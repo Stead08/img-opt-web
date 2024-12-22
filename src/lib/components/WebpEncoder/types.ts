@@ -3,6 +3,7 @@ export interface WebpEncoderState {
 	outputImage: HTMLImageElement | null;
 	currentBlobURL: string | null;
 	quality: number;
+	isLossless: boolean;
 	isLoading: boolean;
 	currentFile: File | null;
 	originalSize: string;

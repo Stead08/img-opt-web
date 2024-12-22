@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { WebpEncoderState } from './types';
 	import FileInput from '$lib/components/FileInput/FileInput.svelte';
-	import QualityControl from '$lib/components/QualityControl/QualityControl.svelte';
+	import EncodingOptions from '$lib/components/EncodingOptions/EncodingOptions.svelte';
 	import ImagePreview from '$lib/components/ImagePreview/ImagePreview.svelte';
 	import WebpWorker from '$lib/webp.worker.ts?worker';
 	import { formatFileSize } from '$lib/utils/formatters';
@@ -11,6 +11,7 @@
 		outputImage: null,
 		currentBlobURL: null,
 		quality: 80,
+		isLossless: false,
 		isLoading: false,
 		currentFile: null,
 		originalSize: '',
@@ -70,7 +71,6 @@
 							if (state.outputImage) state.outputImage.src = state.currentBlobURL;
 							state.convertedSize = formatFileSize(blob.size);
 							console.log('WebP画像が正常に生成されました。');
-							state.isLoading = false;
 							resolve(null);
 						} else {
 							reject(new Error(e.data.error));
@@ -80,14 +80,10 @@
 					}
 				};
 
-				state.worker!.onerror = (error) => {
-					state.isLoading = false;
-					reject(error);
-				};
-
 				state.worker!.postMessage({
 					imageData: image,
-					quality: state.quality
+					quality: state.quality,
+					isLossless: state.isLossless
 				});
 			});
 		} catch (error) {
@@ -117,6 +113,13 @@
 		a.download = state.currentFile?.name.replace(/\.[^.]+$/, '') + '.webp';
 		a.click();
 	}
+
+	function handleLosslessChange(isLossless: boolean) {
+		state.isLossless = isLossless;
+		if (state.currentFile) {
+			convertToWebP(state.currentFile);
+		}
+	}
 </script>
 
 <div class="container">
@@ -133,10 +136,12 @@
 	<div class="controls">
 		<FileInput {handleFileChange} />
 
-		<QualityControl
+		<EncodingOptions
 			quality={state.quality}
+			isLossless={state.isLossless}
 			isDisabled={!state.currentFile || state.isLoading}
 			{handleQualityChange}
+			{handleLosslessChange}
 		/>
 
 		<button onclick={handleDownload} disabled={!state.currentBlobURL || state.isLoading}>

@@ -1,46 +1,49 @@
 import createModule from '@wasm/webp';
-import type { MainModule } from '@wasm/webp';
 
-let api: MainModule | null = null;
+let wasmModule: any;
 
-// WebAssemblyモジュールの初期化
-async function initializeApi() {
-	if (!api) {
-		api = await createModule();
-	}
-	return api;
-}
+createModule().then((module) => {
+	wasmModule = module;
+});
 
-// 画像変換処理
-async function convertToWebP(imageData: ImageData, quality: number) {
-	const api = await initializeApi();
-
-	const p = api._create_buffer(imageData.width, imageData.height);
-	if (!p) throw new Error('Failed to allocate buffer');
-
-	api.HEAP8.set(imageData.data, p);
-	const currentQuality = Math.min(100, Math.max(0, quality));
-	api._encode(p, imageData.width, imageData.height, currentQuality);
-
-	const resultPointer = api._get_result_pointer();
-	const resultSize = api._get_result_size();
-	if (!resultPointer || !resultSize) throw new Error('Encoding failed');
-
-	const resultView = new Uint8Array(api.HEAP8.buffer, resultPointer, resultSize);
-	const result = new Uint8Array(resultView);
-
-	api._free_result(resultPointer);
-	api._destroy_buffer(p);
-
-	return result;
-}
-
-self.onmessage = async (e: MessageEvent) => {
+self.onmessage = async (e) => {
 	try {
-		const { imageData, quality } = e.data;
-		const result = await convertToWebP(imageData, quality);
-		self.postMessage({ success: true, data: result.buffer }); // 修正: result.bufferを直接送信
+		if (!wasmModule) {
+			throw new Error('WASM module not initialized');
+		}
+
+		const { imageData, quality, isLossless } = e.data;
+		const p = wasmModule._create_buffer(imageData.width, imageData.height);
+		
+		if (!p) {
+			throw new Error('Failed to allocate buffer');
+		}
+
+		wasmModule.HEAP8.set(imageData.data, p);
+
+		if (isLossless) {
+			// ロスレスエンコード
+			wasmModule._lossless_encode(p, imageData.width, imageData.height);
+		} else {
+			// 通常のエンコード（品質指定あり）
+			wasmModule._encode(p, imageData.width, imageData.height, quality);
+		}
+
+		const resultPointer = wasmModule._get_result_pointer();
+		const resultSize = wasmModule._get_result_size();
+
+		if (!resultPointer || !resultSize) {
+			throw new Error('Encoding failed');
+		}
+
+		const result = new Uint8Array(wasmModule.HEAP8.buffer, resultPointer, resultSize);
+		const resultCopy = new Uint8Array(result);
+
+		wasmModule._free_result(resultPointer);
+		wasmModule._destroy_buffer(p);
+
+		self.postMessage({ success: true, data: resultCopy }, { transfer: [resultCopy.buffer] });
 	} catch (error) {
-		self.postMessage({ success: false, error: (error as Error).message }); // 修正: errorをError型にキャスト
+		self.postMessage({ success: false, error: (error as Error).message });
 	}
 };
