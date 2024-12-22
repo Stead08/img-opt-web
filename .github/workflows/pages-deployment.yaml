@@ -1,0 +1,34 @@
+on: [push]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Deploy to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: install bun
+        uses: oven-sh/setup-bun@v2
+      - name: bun install
+        run: bun install
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: 'emsdk-cache'
+      - name: Verify
+        run: emcc -v
+      - name: build wasm
+        run: bun run build:wasm
+      - name: build frontend
+        run: bun run build:frontend
+      - name: Publish
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: img-opt-wasm
+          directory: build
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
