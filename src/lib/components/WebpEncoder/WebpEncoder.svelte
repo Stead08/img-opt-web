@@ -125,7 +125,7 @@
 <div class="container">
 	<hgroup>
 		<h1>WebP Encoder</h1>
-		<p>WebP画像をPNGまたはJPEG画像に変換します。</p>
+		<p>PNGまたはJPEG画像をWebP形式に変換します。</p>
 	</hgroup>
 	<article>
 		<p class="warning">
