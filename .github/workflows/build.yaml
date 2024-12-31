@@ -1,0 +1,35 @@
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: 'emsdk-cache'
+      - name: Verify
+        run: emcc -v
+      - name: build wasm
+        run: pnpm run build:wasm
+      - name: build frontend
+        run: pnpm run build:frontend
