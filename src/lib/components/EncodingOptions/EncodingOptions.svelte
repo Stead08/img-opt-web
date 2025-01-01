@@ -34,7 +34,7 @@
 			/>
 			<input
 				type="number"
-				id="quality-number"
+				title="品質"
 				min="0"
 				max="100"
 				value={quality}

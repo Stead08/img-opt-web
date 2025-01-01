@@ -200,6 +200,6 @@
 	}
 
 	.warning {
-		color: #ff0000;
+		color: #B10000;
 	}
 </style>

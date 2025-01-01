@@ -6,8 +6,8 @@
 </script>
 
 <div>
-	<h3>{type === 'input' ? '入力画像:' : 'WebP出力:'}</h3>
-	<img bind:this={image} alt={type === 'input' ? '入力画像' : 'WebP出力'} />
+	<h2 class="image-preview-head">{type === 'input' ? '入力画像:' : 'WebP出力:'}</h2>
+	<img bind:this={image} alt={type === 'input' ? '入力画像' : 'WebP出力'} width="500" height="300"/>
 	{#if fileSize}
 		<p class="file-size">
 			サイズ: {fileSize}
@@ -26,6 +26,10 @@
 	img {
 		max-width: 500px;
 		height: auto;
+	}
+
+	.image-preview-head {
+		font-size: 1.2em;
 	}
 
 	.file-size {
