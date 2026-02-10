@@ -40,6 +40,6 @@
 		"@wasm/webp": "workspace:*"
 	},
 	"volta": {
-		"node": "24.13.0"
+		"node": "24.13.1"
 	}
 }
